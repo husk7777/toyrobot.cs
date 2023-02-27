@@ -16,21 +16,21 @@ namespace ToyRobotTest.Functions
             var commands = ImportFile(fileName);
             var robot = new Robot();
             foreach (var commandString in commands)
-            {                
+            {
                 try
-                {                 
+                {
                     var validatedCommand = ValidateCommand(commandString, out string[] args);
                     var result = ExecuteCommand(robot, validatedCommand, args);
-                    Console.WriteLine(commandString + (string.IsNullOrWhiteSpace(result)?"": ": "+result));
+                    Console.WriteLine(commandString + (string.IsNullOrWhiteSpace(result) ? "" : ": " + result));
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    Console.WriteLine(commandString + ": "+ex.Message);
+                    Console.WriteLine(commandString + ": " + ex.Message);
                 }
             }
             Console.WriteLine(Environment.NewLine);
             Console.WriteLine("Program complete, press any key to exit...");
-            Console.ReadLine();
+            Console.ReadKey(false);
         }
 
         private static string[] ImportFile(string fileName)
@@ -46,12 +46,12 @@ namespace ToyRobotTest.Functions
         {
             var splitCommand = command.Split(' ');
             args = new string[0];
-            if(splitCommand.Count() == 1)
+            if (splitCommand.Count() == 1)
             {
                 try
                 {
-                    if(Enum.Parse<Enums.Commands>(command) != Enums.Commands.PLACE)
-                    return Enum.Parse<Enums.Commands>(command);
+                    if (Enum.Parse<Enums.Commands>(command) != Enums.Commands.PLACE)
+                        return Enum.Parse<Enums.Commands>(command);
                 }
                 catch
                 {
@@ -60,18 +60,12 @@ namespace ToyRobotTest.Functions
             }
             else if (splitCommand.Count() == 2)
             {
-                if(Enum.TryParse<Enums.Commands>(splitCommand[0], out Enums.Commands commandEnum) && commandEnum == Enums.Commands.PLACE)
+                if (Enum.TryParse<Enums.Commands>(splitCommand[0], out Enums.Commands commandEnum) && commandEnum == Enums.Commands.PLACE)
                 {
-                    var splitArgs = splitCommand[1].Split(',');
-                    if(splitArgs.Length == 3)
+                    if (ValidatePlaceArgs(splitCommand[1], out string[] validArgs))
                     {
-                        if(int.TryParse(splitArgs[0], out int xpos) && xpos > 0 && xpos <= SetupParameters.BoardWidth
-                            && int.TryParse(splitArgs[1], out int ypos) && ypos > 0 && ypos <= SetupParameters.BoardHeight
-                            && Enum.IsDefined(Enum.Parse<Enums.Direction>(splitArgs[2])))
-                        {
-                            args = splitArgs;
-                            return Enums.Commands.PLACE;
-                        }
+                        args = validArgs;
+                        return Enums.Commands.PLACE;
                     }
                     else
                     {
@@ -82,7 +76,17 @@ namespace ToyRobotTest.Functions
             throw new ArgumentException("Invalid command provided");
         }
 
-        
+        private static bool ValidatePlaceArgs(string argString, out string[] args)
+        {
+            args = argString.Split(',');
+            if (args.Count() != 3) return false;
+            if (!(int.TryParse(args[0], out int xpos) && xpos > 0 && xpos <= SetupParameters.BoardWidth)) return false;
+            if (!(int.TryParse(args[1], out int ypos) && ypos > 0 && ypos <= SetupParameters.BoardHeight)) return false;
+            if (!Enum.TryParse<Enums.Direction>(args[2], out Enums.Direction direction) || !Enum.IsDefined<Enums.Direction>(direction)) return false;
+            return true;
+        }
+
+
         //Using this approach of executing the commands and using the setter validation to stop invalid commands only works because each command only
         //updates one property at a time (besides place, but the ValidateCommand method handles incorrect parameters). If any command was added/modified
         //to update more than one parameter per operation, this would need to be reworked
